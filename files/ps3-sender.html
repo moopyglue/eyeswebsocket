@@ -13,7 +13,7 @@ lastsendstr=""
 tickcount=0;
 frametime=100;
 
-var ws = new WebSocket("ws://websocket.qmonkey.co.uk/send");
+var ws = new WebSocket( "ws://" + location.hostname+(location.port ? ':'+location.port: '') + "/send");
 
 function gametick() {
 	tickcount+=1;

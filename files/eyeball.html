@@ -81,7 +81,7 @@ function draweye () {
 
 draweye();
 
-var ws = new WebSocket("ws://websocket.qmonkey.co.uk/get");
+var ws = new WebSocket( "ws://" + location.hostname+(location.port ? ':'+location.port: '') + "/get");
 ws.onmessage = function(e) {
 	var x = e.data.split(",");
 	leftright = 0.5 - (x[0] / 300) ; 

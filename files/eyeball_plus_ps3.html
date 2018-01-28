@@ -81,7 +81,7 @@ function draweye () {
 
 draweye();
 
-var xs = new WebSocket("ws://websocket.qmonkey.co.uk/get");
+var ws = new WebSocket( "ws://" + location.hostname+(location.port ? ':'+location.port: '') + "/get");
 xs.onmessage = function(e) {
 	if( event.data != "NULL" ) {
 		var x = event.data.split(",");
@@ -97,7 +97,7 @@ lastsendstr=""
 tickcount=0;
 frametime=100;
 
-var ws = new WebSocket("ws://websocket.qmonkey.co.uk/send");
+var ws = new WebSocket( "ws://" + location.hostname+(location.port ? ':'+location.port: '') + "/send");
 
 function gametick() {
 	tickcount+=1;
