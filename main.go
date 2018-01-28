@@ -2,6 +2,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"time"
 	"net/http"
@@ -13,6 +14,7 @@ type msg struct {
         str []byte
 }
 var loadstorevar atomic.Value
+var verbose=false
 
 var upgrader = websocket.Upgrader{
     ReadBufferSize:  1024,
@@ -30,7 +32,7 @@ func sendServer(w http.ResponseWriter, r *http.Request) {
 		if err != nil { fmt.Println(err); return }
 		v := msg{ message }
 		loadstorevar.Store(v)
-		// fmt.Printf("mess=%s\n",message)
+		if( verbose ) { fmt.Printf("mess=%s\n",message) }
 	}
 }
 
@@ -43,19 +45,29 @@ func getServer(w http.ResponseWriter, r *http.Request) {
 		var err = conn.WriteMessage(1,v.str)
 		time.Sleep(100*time.Millisecond);
 		if err != nil { fmt.Println(err); return }
-		// fmt.Printf("sent mess\n")
+		if( verbose ) { fmt.Printf("sent mess\n") }
 	}
 }
 
 func main() {
 
-	v := msg{ []byte("NULL") }
+	// Do input args handling
+	vflag:=flag.Bool("v",false,"verbose mode");
+	flag.Parse();
+	if( *vflag ) { verbose=true; }
+	if( verbose ) { fmt.Printf("[Running in verbose mode]\n") }
+
+	// Load a default value into the 'Store'
+	// We use the store as a locking mechanism
+	v := msg{ []byte("0,0,0,0,0,0,0,0,0") }
 	loadstorevar.Store(v)
 
+	// Set up each of the handlers
 	http.HandleFunc("/send", sendServer)
 	http.HandleFunc("/get", getServer)
 	http.Handle("/files/", http.FileServer(http.Dir(".")))
 
+	// Set the server running
 	fmt.Printf("Starting\n");
 	err := http.ListenAndServe(":12345", nil)
 	if err != nil {
