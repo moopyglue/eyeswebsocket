@@ -1,0 +1,58 @@
+<html><head>
+<style>
+html, body { height:100% ; margin:0 }
+.white { position: absolute; left: 0px; top: 0px; background-color: #000; min-height:100%; width:100%; }
+</style>
+</head>
+<body>
+<div class=white></div>
+<script>
+
+sendstr=""
+lastsendstr=""
+tickcount=0;
+frametime=100;
+
+if (window.location.protocol == "https:") {
+    var ws = new WebSocket("wss://"+window.location.hostname+"/send");
+} else {
+    var ws = new WebSocket("ws://"+window.location.hostname+"/send");
+}
+
+function gametick() {
+	tickcount+=1;
+	x1 = Math.round(navigator.getGamepads()[0].axes[0]*100);
+	y1 = Math.round(navigator.getGamepads()[0].axes[1]*100);
+	x2 = Math.round(navigator.getGamepads()[0].axes[2]*100);
+	y2 = Math.round(navigator.getGamepads()[0].axes[3]*100);
+	buttons="";
+	for( var i=0; i<=16 ; i++ ) { 
+		if(navigator.getGamepads()[0].buttons[i].pressed)
+			buttons+=","+i;
+	}
+	sendstr=x1+","+y1+","+x2+","+y2+buttons
+	if( (tickcount*frametime) > 5000 || sendstr != lastsendstr ) {
+		ws.send(sendstr);
+		console.log(JSON.stringify({content:sendstr}));
+		tickcount=0;
+		lastsendstr=sendstr;
+	}
+	return 0;
+}
+ws.onmessage = function(e) {
+	console.log(event.data);
+}
+ws.onerror = function (error) {
+  console.log('WebSocket Error ' + error);
+};
+
+
+function gameticktimer() {
+	gametick();
+	setTimeout(gameticktimer,frametime);
+}
+ws.onopen = function(event) { gameticktimer(); }
+
+</script>
+</body>
+</html>

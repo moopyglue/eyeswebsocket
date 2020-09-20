@@ -18,7 +18,7 @@ leftright = 0.5 ;
 wavecount = 0 ; 
 xeyemod=0 ;
 yeyemod=0 ;
-eyemodsize=6 ;
+eyemodsize=4 ;
 waittime=1000 ;
 frametime=50 ;
 
@@ -68,7 +68,7 @@ function draweye () {
 	if( waittime < 0 ) {
 		xeyemod=Math.round(Math.sin(Math.random()*90)*eyemodsize);
 		yeyemod=Math.round(Math.sin(Math.random()*90)*eyemodsize);
-		waittime = waittime + 400 + ( Math.random() * 1000) ;
+		waittime = waittime + 500 + ( Math.random() * 1000) ;
 	}
 	document.getElementsByClassName('iris')[0].style.left = Math.round( ((0.5-leftright) * 1100)+540+xeyemod+elmod ).toString() + "px" ;
 	document.getElementsByClassName('iris')[0].style.top = Math.round( ((0.5-updown) * 600)+150+yeyemod+(85*(1-open)) ).toString() + "px" ;
@@ -82,20 +82,64 @@ function draweye () {
 draweye();
 
 if (window.location.protocol == "https:") {
-    var ws = new WebSocket("wss://"+window.location.hostname+"/get");
+    var xs = new WebSocket("wss://"+window.location.hostname+"/get");
 } else {
-    var ws = new WebSocket("ws://"+window.location.hostname+"/get");
+    var xs = new WebSocket("ws://"+window.location.hostname+"/get");
 }
-ws.onmessage = function(e) {
-	var x = e.data.split(",");
-	if( x.length > 1 ) {
+xs.onmessage = function(e) {
+	if( event.data != "NULL" ) {
+		var x = event.data.split(",");
 		leftright = 0.5 - (x[0] / 300) ; 
 		updown = 0.5 - (x[1] / 300 ); 
-		if( x[3] > 0 ) { open = (((0-x[3])/100)+0.7); }
-        else { open = (((0-x[3])/300)+0.7); }
-        console.log("leftright="+leftright+" updown="+updown+" open="+open);
+		if( x[3] > 0 ) { open = (((0-x[3])/100)+0.7); } else { open = (((0-x[3])/300)+0.7); }
 	}
 }
+
+
+sendstr=""
+lastsendstr=""
+tickcount=0;
+frametime=100;
+
+if (window.location.protocol == "https:") {
+    var ws = new WebSocket("wss://"+window.location.hostname+"/send");
+} else {
+    var ws = new WebSocket("ws://"+window.location.hostname+"/send");
+}
+
+function gametick() {
+	tickcount+=1;
+	x1 = Math.round(navigator.getGamepads()[0].axes[0]*100);
+	y1 = Math.round(navigator.getGamepads()[0].axes[1]*100);
+	x2 = Math.round(navigator.getGamepads()[0].axes[2]*100);
+	y2 = Math.round(navigator.getGamepads()[0].axes[3]*100);
+	buttons="";
+	for( var i=0; i<=16 ; i++ ) { 
+		if(navigator.getGamepads()[0].buttons[i].pressed)
+			buttons+=","+i;
+	}
+	sendstr=x1+","+y1+","+x2+","+y2+buttons
+	if( (tickcount*frametime) > 5000 || sendstr != lastsendstr ) {
+		ws.send(sendstr);
+		console.log(JSON.stringify({content:sendstr}));
+		tickcount=0;
+		lastsendstr=sendstr;
+	}
+	return 0;
+}
+ws.onmessage = function(e) {
+	console.log(event.data);
+}
+ws.onerror = function (error) {
+  console.log('WebSocket Error ' + error);
+};
+
+
+function gameticktimer() {
+	gametick();
+	setTimeout(gameticktimer,frametime);
+}
+ws.onopen = function(event) { gameticktimer(); }
 
 </script>
 </body>
